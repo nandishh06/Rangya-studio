@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rangya Studio</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo">▶</span> Rangya Studio</div>
+  <div class="top-actions">
+    <span id="keyStatus" class="pill"></span>
+    <button id="openSettings" class="ghost">Settings</button>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar">
+    <button id="newVideo" class="primary block">+ New video</button>
+    <div id="projectList" class="plist"></div>
+  </aside>
+
+  <main id="main">
+    <!-- Upload view -->
+    <section id="uploadView" class="view">
+      <h1>Edit a new video</h1>
+      <p class="muted">Upload a raw recording. Rangya transcribes it, removes pauses, filler, coughs, retakes and false starts, adds captions and zooms, then shows you a preview to adjust.</p>
+      <label id="drop" class="drop">
+        <input id="fileInput" type="file" accept="video/*,.mov,.mkv,.mts" hidden>
+        <div class="drop-inner">
+          <div class="drop-icon">⬆</div>
+          <div><b>Drop a video here</b> or click to choose</div>
+          <div id="fileName" class="muted small"></div>
+        </div>
+      </label>
+      <div class="form-row">
+        <label>Output format
+          <select id="upFormat">
+            <option value="original">Same as recording</option>
+            <option value="9:16">Vertical 9:16 (Reels / Shorts)</option>
+            <option value="16:9">Horizontal 16:9 (YouTube)</option>
+          </select>
+        </label>
+        <label>Captions
+          <select id="upCaptions"><option value="1">Burned-in, word by word</option><option value="0">Off (SRT file only)</option></select>
+        </label>
+        <label>Language
+          <select id="upLang">
+            <option value="">Auto-detect</option><option value="en">English</option><option value="hi">Hindi</option>
+            <option value="kn">Kannada</option><option value="ta">Tamil</option><option value="te">Telugu</option>
+            <option value="mr">Marathi</option><option value="ml">Malayalam</option><option value="bn">Bengali</option><option value="gu">Gujarati</option><option value="pa">Punjabi</option>
+          </select>
+        </label>
+      </div>
+      <label class="check taste-up hidden" id="upTasteRow"><input type="checkbox" id="upTaste"> Start from my taste
+        <span class="muted small">(apply the style and effects learned from your past edits — leave off for a fresh edit)</span></label>
+      <button id="startUpload" class="primary big" disabled>Upload &amp; edit</button>
+      <div id="uploadProgress" class="progress hidden"><div></div></div>
+      <div id="uploadMsg" class="muted small"></div>
+    </section>
+
+    <!-- Project view -->
+    <section id="projectView" class="view hidden">
+      <div class="phead">
+        <div>
+          <h1 id="pName"></h1>
+          <div class="muted small" id="pMeta"></div>
+        </div>
+        <div class="pactions">
+          <button id="btnTaste" class="taste-btn" title="Edit this video the way you like it — learned from your choices">✦ Auto taste</button>
+          <button id="btnPreview" class="secondary">Update preview</button>
+          <button id="btnReset" class="ghost" title="Go back to a clean first edit of the original video">↺ Start over</button>
+          <button id="btnFinal" class="primary">Render final</button>
+          <div class="dl" id="downloads"></div>
+          <button id="btnDelete" class="ghost danger" title="Delete project">Delete</button>
+        </div>
+      </div>
+
+      <div id="statusBox" class="status">
+        <div class="status-line"><span id="statusPill" class="pill"></span><span id="statusStage"></span></div>
+        <div id="statusBar" class="progress"><div></div></div>
+        <div id="statusError" class="error hidden"></div>
+      </div>
+      <div id="dirtyBanner" class="banner hidden">You have changes that aren't in the preview yet. <button id="btnPreview2" class="secondary small-btn">Update preview</button></div>
+
+      <div class="workspace">
+        <div class="player-col">
+          <div class="tabs" id="videoTabs">
+            <button data-v="preview.mp4" class="on">Preview</button>
+            <button data-v="final.mp4">Final</button>
+            <button data-v="original">Original</button>
+          </div>
+          <div class="player-wrap"><video id="player" controls playsinline preload="metadata"></video>
+            <div id="noVideo" class="novideo">The preview appears here when it's ready.</div>
+            <div id="updating" class="updating hidden"><div class="spin"></div><div id="updatingText">Updating preview…</div>
+              <div class="muted small">You're watching the previous version until it's done.</div></div></div>
+          <div class="stats" id="stats"></div>
+          <div class="fxlist" id="fxList"></div>
+        </div>
+
+        <div class="edit-col">
+          <div class="tabs" id="editTabs">
+            <button data-t="copilot" class="on">✦ Copilot</button>
+            <button data-t="transcript">Transcript</button>
+            <button data-t="style">Style</button>
+            <button data-t="effects">✨ Effects</button>
+            <button data-t="media">Media</button>
+            <button data-t="taste">My taste</button>
+          </div>
+
+          <div id="tabTaste" class="panel hidden">
+            <div class="taste-head">
+              <div><b>Your taste</b> <span class="muted small">— learned from every edit you make, nothing sent anywhere</span></div>
+              <div class="conf"><div class="conf-bar"><div id="tasteConfBar"></div></div><span id="tasteConf" class="small"></span></div>
+            </div>
+            <p class="muted small">It learns from effects you add or remove (and on what kind of moment), Auto ticks, style changes and — most of all — videos you render as final. Press <b>✦ Auto taste</b> to apply it; every tweak after that refines it.</p>
+            <label class="check taste-new"><input type="checkbox" id="tasteAutoNew"> Tick “Start from my taste” on new uploads by default</label>
+            <div class="taste-grid">
+              <div><h3 class="mh">Effects you like</h3><ul id="tasteLikes" class="tlist"></ul></div>
+              <div><h3 class="mh">Effects you avoid</h3><ul id="tasteDislikes" class="tlist"></ul></div>
+              <div><h3 class="mh">What you use where</h3><ul id="tasteMoments" class="tlist"></ul></div>
+              <div><h3 class="mh">Your style</h3><ul id="tasteStyle" class="tlist"></ul></div>
+            </div>
+            <h3 class="mh">Recently learned</h3>
+            <ul id="tasteHistory" class="tlist small"></ul>
+            <button type="button" class="ghost danger small-btn" id="tasteReset">Reset my taste</button>
+          </div>
+
+          <div id="tabEffects" class="panel hidden">
+            <div class="fx-top">
+              <label class="check"><input type="checkbox" id="fxAuto"> Auto effects</label>
+              <select id="fxDensity"><option value="low">A few</option><option value="medium">Balanced</option><option value="high">Lots</option></select>
+              <span id="fxAutoCount" class="muted small"></span>
+            </div>
+            <p class="muted small fx-help">Your ticks are <b>your selection</b> — every new video uses them. Tick <b>Auto</b> on the effects the editor may pick by itself. Press <b>Add</b> to put one exactly where you want it. Effects follow your face and sit behind your head.</p>
+            <div class="chips" id="fxCats"></div>
+            <div id="fxForm" class="fx-form hidden">
+              <div class="fx-form-head"><div><b id="fxfName"></b> <span id="fxfDesc" class="muted small"></span></div><button type="button" class="ghost" id="fxfClose">✕</button></div>
+              <div class="fx-when">
+                <label class="check"><input type="radio" name="fxwhen" value="playhead" checked> At the playhead <span id="fxfAt" class="muted"></span></label>
+                <label class="check"><input type="radio" name="fxwhen" value="word"> When I say <input id="fxfWord" placeholder="a word you say"></label>
+                <label class="check"><input type="radio" name="fxwhen" value="range"> From <input id="fxfFrom" class="num" type="number" step="0.1" min="0"> to <input id="fxfTo" class="num" type="number" step="0.1" min="0"> s</label>
+              </div>
+              <label id="fxfTextRow">Text <input id="fxfText"></label>
+              <label id="fxfSecondRow" class="hidden"><span id="fxfSecondLabel"></span> <input id="fxfSecond"></label>
+              <label id="fxfValueRow" class="hidden">Number to count up to <input id="fxfValue" placeholder="197K, 59%, $10K"></label>
+              <div class="fx-form-actions">
+                <button type="button" class="secondary" id="fxfTry">Preview on my video</button>
+                <button type="button" class="primary" id="fxfAdd">Add to video</button>
+                <span id="fxfMsg" class="muted small"></span>
+              </div>
+              <img id="fxfStill" class="fx-still hidden" alt="Effect preview on your video">
+            </div>
+            <div class="fx-now-head">
+              <h3 class="mh">Effects in this video</h3>
+              <div class="fx-now-btns">
+                <button type="button" class="ghost danger small-btn" id="fxClearAll">Remove all effects</button>
+                <button type="button" class="ghost danger small-btn" id="fxPlain" title="This video only: no effects, no colour filter, no zoom, normal speed, simple captions">Plain video (no effects or filters)</button>
+                <button type="button" class="secondary small-btn hidden" id="fxRestore">Turn auto effects back on</button>
+              </div>
+            </div>
+            <ul id="userFx" class="alist"></ul>
+            <h3 class="mh">All effects</h3>
+            <div class="fx-grid" id="fxGrid"></div>
+          </div>
+
+          <div id="tabCopilot" class="panel copilot">
+            <div id="chat" class="chat"></div>
+            <div class="chips" id="chips">
+              <button type="button">Make it like the reel</button>
+              <button type="button">List effects</button>
+              <button type="button">Tighter pauses</button>
+              <button type="button">Make it more energetic</button>
+              <button type="button">Bigger captions at the top</button>
+              <button type="button">Slow zoom</button>
+              <button type="button">Make it vertical</button>
+              <button type="button">Undo</button>
+              <button type="button">Help</button>
+            </div>
+            <form id="chatForm" class="chat-form">
+              <textarea id="chatInput" rows="2" placeholder="Tell the copilot what to change… e.g. “cut the part where I say January, captions yellow, slow zoom”"></textarea>
+              <button class="primary" id="chatSend">Send</button>
+            </form>
+          </div>
+
+          <div id="tabTranscript" class="panel hidden">
+            <div class="legend" id="legend"></div>
+            <div class="hint small muted">Click a word to cut or keep it · <kbd>Shift</kbd>+click to apply to a range · <kbd>Alt</kbd>+click to highlight it in captions · <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+click to jump the preview there</div>
+            <div id="words" class="words"></div>
+          </div>
+
+          <div id="tabMedia" class="panel hidden">
+            <h3 class="mh">B-roll clips</h3>
+            <p class="muted small">Short clips of you working, walking, your setup, your city… They're cut in automatically every few seconds (never over your opening hook or the ending), starting on cuts so jumps are hidden. Ask the copilot e.g. “b-roll every 3 seconds” or “b-roll when I talk about trading”.</p>
+            <label class="upl secondary"><input type="file" id="brollInput" accept="video/*,.mov,.mkv" multiple hidden>+ Add B-roll clips</label>
+            <ul id="brollList" class="alist"></ul>
+            <h3 class="mh">Background music</h3>
+            <p class="muted small">One track. It loops to the video's length, fades in/out, and automatically dips while you speak so your voice stays clear.</p>
+            <label class="upl secondary"><input type="file" id="musicInput" accept="audio/*" hidden>+ Choose music</label>
+            <ul id="musicList" class="alist"></ul>
+            <div id="assetMsg" class="muted small"></div>
+          </div>
+
+          <div id="tabStyle" class="panel hidden">
+            <form id="styleForm" class="style-form">
+              <fieldset><legend>Format</legend>
+                <label>Output <select name="format"><option value="original">Same as recording</option><option value="9:16">Vertical 9:16</option><option value="16:9">Horizontal 16:9</option></select></label>
+              </fieldset>
+              <fieldset><legend>Pacing</legend>
+                <label>Longest pause kept <span class="val" data-for="cut.max_pause"></span>
+                  <input type="range" name="cut.max_pause" min="0.15" max="1.2" step="0.05"></label>
+                <label>Breath after sentences <span class="val" data-for="cut.pad_after"></span>
+                  <input type="range" name="cut.pad_after" min="0.04" max="0.4" step="0.02"></label>
+                <label class="check"><input type="checkbox" name="cut.remove_fillers"> Remove um / uh</label>
+                <label class="check"><input type="checkbox" name="cut.remove_events"> Remove coughs &amp; throat clears</label>
+                <label class="check"><input type="checkbox" name="cut.remove_retakes"> Remove retakes &amp; false starts</label>
+              </fieldset>
+              <fieldset><legend>Speed</legend>
+                <label>Talking speed <span class="val" data-for="speed"></span>
+                  <input type="range" name="speed" min="0.9" max="1.3" step="0.01"></label>
+              </fieldset>
+              <fieldset><legend>Zoom</legend>
+                <label>Style <select name="zoom.mode"><option value="punch">Punch-in on cuts</option><option value="push">Slow push-in</option><option value="none">None</option></select></label>
+                <label>Amount <span class="val" data-for="zoom.amount"></span>
+                  <input type="range" name="zoom.amount" min="0.02" max="0.25" step="0.01"></label>
+              </fieldset>
+              <fieldset><legend>Captions</legend>
+                <label class="check"><input type="checkbox" name="captions.enabled"> Burn captions into the video</label>
+                <label>Words on screen <span class="val" data-for="captions.words"></span>
+                  <input type="range" name="captions.words" min="1" max="6" step="1"></label>
+                <label>Position (top → bottom) <span class="val" data-for="captions.position"></span>
+                  <input type="range" name="captions.position" min="0.12" max="0.9" step="0.02"></label>
+                <label>Size <span class="val" data-for="captions.size"></span>
+                  <input type="range" name="captions.size" min="0.035" max="0.11" step="0.005"></label>
+                <label>Caption style <select name="captions.style">
+                  <option value="classic">Classic — subtitle line, word highlight</option>
+                  <option value="kinetic">Kinetic — words stack beside your face (reel look)</option></select></label>
+                <label>Font <select name="captions.font" id="fontSelect"></select></label>
+                <label>Caption language <select name="captions.script">
+                  <option value="latin">English letters (Hinglish: “dekho”, “kya”)</option>
+                  <option value="original">As spoken (देखो, ಕನ್ನಡ…)</option></select></label>
+                <label class="check"><input type="checkbox" name="captions.uppercase"> UPPERCASE</label>
+                <label class="check"><input type="checkbox" name="captions.auto_emphasis"> Auto-highlight numbers</label>
+                <div class="colors">
+                  <label>Text <input type="color" name="captions.color"></label>
+                  <label>Spoken word <input type="color" name="captions.highlight"></label>
+                  <label>Emphasis <input type="color" name="captions.emphasis"></label>
+                </div>
+              </fieldset>
+              <fieldset><legend>Look &amp; sound</legend>
+                <label>Colour grade <select name="look.grade">
+                  <option value="none">Natural</option><option value="vivid">Vivid</option>
+                  <option value="cinematic">Cinematic</option><option value="warm">Warm</option>
+                  <option value="moody">Moody</option></select></label>
+                <label class="check"><input type="checkbox" name="audio.denoise"> Reduce background noise</label>
+              </fieldset>
+              <fieldset><legend>Effects</legend>
+                <label class="check"><input type="checkbox" name="effects.auto"> Auto effects — pick face-tracking effects from what you say</label>
+                <label>How many <select name="effects.density">
+                  <option value="low">A few (about every 14s)</option><option value="medium">Balanced (about every 8s)</option>
+                  <option value="high">Lots (about every 5s)</option></select></label>
+                <div class="muted small">Ask the copilot for any of the 42 effects, e.g. “spotlight when I say honestly”. Type “list effects” to see them all.</div>
+              </fieldset>
+              <fieldset><legend>Music &amp; B-roll</legend>
+                <label class="check"><input type="checkbox" name="audio.music"> Background music (upload in Media)</label>
+                <label>Music volume <span class="val" data-for="audio.music_volume"></span>
+                  <input type="range" name="audio.music_volume" min="-36" max="-8" step="1"></label>
+                <label class="check"><input type="checkbox" name="broll.enabled"> B-roll cutaways (upload in Media)</label>
+                <label>B-roll every <span class="val" data-for="broll.every"></span>
+                  <input type="range" name="broll.every" min="2.5" max="15" step="0.5"></label>
+                <label>Each B-roll clip lasts <span class="val" data-for="broll.length"></span>
+                  <input type="range" name="broll.length" min="1" max="6" step="0.2"></label>
+              </fieldset>
+              <div class="form-actions">
+                <span class="muted small">✓ What you select here is saved as <b>your selection</b> and used for every new video.</span>
+                <span id="styleMsg" class="muted small"></span>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<dialog id="settingsDlg">
+  <form method="dialog" class="dlg">
+    <h2>Settings</h2>
+    <label>ElevenLabs API key
+      <input id="keyInput" type="password" autocomplete="off" placeholder="Paste key to set or replace">
+    </label>
+    <div class="muted small">Stored only on this computer in <code>.env</code>. Create one at elevenlabs.io → Developers → API keys (Speech to Text permission is enough).</div>
+    <label>Speech-to-text model
+      <input id="modelInput" placeholder="scribe_v1">
+    </label>
+    <div class="dlg-actions">
+      <button value="cancel" class="ghost">Cancel</button>
+      <button id="saveSettings" value="default" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

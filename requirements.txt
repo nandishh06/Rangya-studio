@@ -1,0 +1,9 @@
+flask>=3.0
+pillow>=10.0
+requests>=2.31
+uharfbuzz>=0.40
+freetype-py>=2.4
+waitress>=3.0
+mediapipe>=0.10.14; python_version < "3.13"
+opencv-contrib-python>=4.8; python_version >= "3.13"
+numpy>=1.24,<2

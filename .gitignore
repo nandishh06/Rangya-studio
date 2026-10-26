@@ -1,0 +1,12 @@
+.env
+.venv/
+projects/
+__pycache__/
+*.pyc
+.DS_Store
+input videos/
+taste.json
+style.json
+dist/
+.original.tmp.mp4
+*.part.mkv
